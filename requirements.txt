@@ -1,0 +1,21 @@
+# DealBot v1 — Python dependencies
+# Install with: pip install -r requirements.txt
+#
+# Python 3.11+ required.
+
+# Discord bot framework
+discord.py==2.3.2
+
+# Async SQLite
+aiosqlite==0.20.0
+
+# Environment variable loading
+python-dotenv==1.0.1
+
+# Optional: AES-256 encrypted backups.
+# Remove this line if you don't need backup encryption
+# (set BACKUP_ENCRYPTION_KEY= in .env to disable at runtime).
+cryptography==42.0.5
+
+# Fixed: removed `aiofiles==23.2.1` — it was listed in the original
+# requirements.txt but is not imported anywhere in the codebase (dead dependency).
