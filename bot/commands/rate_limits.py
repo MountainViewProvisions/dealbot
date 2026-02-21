@@ -59,10 +59,10 @@ class RateLimitCommands(commands.GroupCog, name="rate_limits"):
     async def rl_set(
         self,
         interaction: discord.Interaction,
-        max_open: float = 10,
+        max_open: float = 10.0,
         max_volume: float = 50_000,
-        cooldown_hours: float = 24,
-        reminder_mins: float = 30,
+        cooldown_hours: float = 24.0,
+        reminder_mins: float = 30.0,
         weekly_summary: bool = True,
         mediator_role: str = "DealMediator",
     ):
