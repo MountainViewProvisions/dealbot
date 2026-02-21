@@ -59,7 +59,7 @@ class RateLimitCommands(commands.GroupCog, name="rate_limits"):
     async def rl_set(
         self,
         interaction: discord.Interaction,
-        max_open: foaot = 10,
+        max_open: float = 10,
         max_volume: float = 50_000,
         cooldown_hours: float = 24,
         reminder_mins: float = 30,
