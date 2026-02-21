@@ -60,7 +60,7 @@ class RateLimitCommands(commands.GroupCog, name="rate_limits"):
         self,
         interaction: discord.Interaction,
         max_open: float = 10.0,
-        max_volume: float = 50_000,
+        max_volume: float = 50_000.0,
         cooldown_hours: float = 24.0,
         reminder_mins: float = 30.0,
         weekly_summary: bool = True,
