@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DealBot — Deal Ledger for Livestream Hosts & Agencies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #080B11;
+    --bg2:      #0D1118;
+    --card:     #111720;
+    --border:   #1C2535;
+    --accent:   #00E5A0;
+    --accent2:  #3B82F6;
+    --warn:     #F59E0B;
+    --danger:   #EF4444;
+    --text:     #EDF2FF;
+    --muted:    #6B7A99;
+    --muted2:   #404D65;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2.5rem;
+    height: 64px;
+    background: rgba(8,11,17,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: color .2s;
+  }
+
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 8rem 2.5rem 5rem;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%);
+    top: 10%; left: -100px;
+    pointer-events: none;
+  }
+
+  .hero-glow2 {
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
+    bottom: 10%; right: 5%;
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    font-family: var(--mono);
+    font-size: .7rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: rgba(0,229,160,0.08);
+    border: 1px solid rgba(0,229,160,0.2);
+    padding: .3rem .8rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+    letter-spacing: .08em;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(.7); }
+  }
+
+  h1 {
+    font-size: clamp(2.8rem, 5vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    margin-bottom: 1.25rem;
+  }
+
+  h1 .hl { color: var(--accent); }
+
+  .hero-desc {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: .85rem;
+    line-height: 1.75;
+    margin-bottom: 2rem;
+    max-width: 480px;
+  }
+
+  .btn-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .7rem 1.6rem;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #00ffb3; box-shadow: 0 0 30px rgba(0,229,160,0.35); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--muted); }
+
+  /* Terminal Card */
+  .terminal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .8rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #FF5F57; }
+  .dot-y { background: #FEBC2E; }
+  .dot-g { background: #28C840; }
+
+  .terminal-title {
+    margin-left: auto;
+    margin-right: auto;
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--muted);
+  }
+
+  .terminal-body {
+    padding: 1.25rem 1.5rem;
+    font-family: var(--mono);
+    font-size: .78rem;
+    line-height: 1.8;
+  }
+
+  .t-prompt { color: var(--muted2); }
+  .t-cmd { color: var(--accent2); }
+  .t-arg { color: var(--warn); }
+  .t-output { color: var(--muted); }
+  .t-success { color: var(--accent); }
+  .t-id { color: var(--accent2); font-weight: 500; }
+  .t-blank { display: block; height: .5rem; }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 2.5rem;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: .7rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: .75rem;
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 1rem;
+    line-height: 1.15;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: .85rem;
+    max-width: 560px;
+    line-height: 1.75;
+    margin-bottom: 3rem;
+  }
+
+  /* ── USE CASES ── */
+  .use-cases {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .use-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.75rem;
+    transition: border-color .25s, transform .25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .use-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity .25s;
+  }
+
+  .use-card:hover { border-color: rgba(0,229,160,0.3); transform: translateY(-3px); }
+  .use-card:hover::before { opacity: 1; }
+
+  .use-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .use-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+    color: var(--text);
+  }
+
+  .use-card p {
+    color: var(--muted);
+    font-size: .83rem;
+    font-family: var(--mono);
+    line-height: 1.7;
+  }
+
+  /* ── COMMANDS TABLE ── */
+  .cmd-section { padding-top: 0; }
+
+  .cmd-tabs {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .cmd-tab {
+    padding: .4rem 1rem;
+    border-radius: 6px;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    cursor: pointer;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    transition: all .2s;
+    font-family: var(--sans);
+  }
+
+  .cmd-tab.active, .cmd-tab:hover {
+    background: rgba(0,229,160,0.1);
+    border-color: rgba(0,229,160,0.3);
+    color: var(--accent);
+  }
+
+  .cmd-panel { display: none; }
+  .cmd-panel.active { display: block; }
+
+  .cmd-list {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+  }
+
+  .cmd-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1rem;
+    align-items: start;
+    transition: border-color .2s;
+  }
+
+  .cmd-item:hover { border-color: var(--muted2); }
+
+  .cmd-name {
+    font-family: var(--mono);
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--accent2);
+    line-height: 1.5;
+  }
+
+  .cmd-name .arg { color: var(--warn); }
+  .cmd-name .opt { color: var(--muted); }
+
+  .cmd-desc {
+    font-family: var(--mono);
+    font-size: .78rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .cmd-params {
+    margin-top: .5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+  }
+
+  .cmd-param {
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--muted2);
+  }
+
+  .cmd-param b { color: var(--warn); font-weight: 500; }
+
+  /* ── LIFECYCLE ── */
+  .lifecycle-flow {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: .75rem;
+  }
+
+  .lf-node {
+    padding: .3rem .7rem;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .lf-arrow { color: var(--muted2); font-size: 1rem; }
+  .lf-branch { color: var(--muted2); }
+
+  .lf-pending { background: rgba(245,158,11,0.15); color: var(--warn); border: 1px solid rgba(245,158,11,0.25); }
+  .lf-active { background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.2); }
+  .lf-pcomp { background: rgba(59,130,246,0.12); color: var(--accent2); border: 1px solid rgba(59,130,246,0.25); }
+  .lf-done { background: rgba(0,229,160,0.08); color: var(--accent); border: 1px solid rgba(0,229,160,0.15); }
+  .lf-disputed { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+  .lf-overdue { background: rgba(245,158,11,0.1); color: var(--warn); border: 1px solid rgba(245,158,11,0.2); }
+  .lf-default { background: rgba(239,68,68,0.08); color: var(--danger); border: 1px solid rgba(239,68,68,0.15); }
+  .lf-cancel { background: rgba(107,122,153,0.15); color: var(--muted); border: 1px solid rgba(107,122,153,0.2); }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .status-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: .2rem .6rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: .7rem;
+    font-weight: 500;
+    margin-bottom: .5rem;
+  }
+
+  .status-item p {
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── REP TIERS ── */
+  .rep-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .rep-tiers { display: flex; flex-direction: column; gap: .75rem; }
+
+  .rep-tier {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .9rem 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .rep-tier-score {
+    font-family: var(--mono);
+    font-size: .78rem;
+    font-weight: 500;
+    color: var(--muted);
+    min-width: 80px;
+  }
+
+  .rep-tier-name {
+    font-size: .85rem;
+    font-weight: 700;
+  }
+
+  .rep-bar {
+    margin-left: auto;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    width: 80px;
+    overflow: hidden;
+  }
+
+  .rep-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+
+  .scoring-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+
+  .scoring-card h4 {
+    font-size: .85rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .scoring-card p, .scoring-card li {
+    font-family: var(--mono);
+    font-size: .78rem;
+    color: var(--muted);
+    line-height: 1.75;
+  }
+
+  .scoring-card ul { padding-left: 1.2rem; margin-top: .5rem; }
+  .scoring-card li { margin-bottom: .3rem; }
+
+  /* ── PRIVACY ── */
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .privacy-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+  }
+
+  .privacy-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: .1rem; }
+
+  .privacy-item h4 {
+    font-size: .85rem;
+    font-weight: 700;
+    margin-bottom: .3rem;
+  }
+
+  .privacy-item p {
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* ── NETWORKS ── */
+  .networks { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem; }
+
+  .network-pill {
+    padding: .5rem 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: .78rem;
+    font-weight: 500;
+    color: var(--text);
+    transition: all .2s;
+  }
+
+  .network-pill:hover {
+    border-color: rgba(0,229,160,0.3);
+    color: var(--accent);
+    background: rgba(0,229,160,0.05);
+  }
+
+  /* ── DISCLAIMER ── */
+  .disclaimer {
+    background: rgba(239,68,68,0.05);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 3rem;
+    font-family: var(--mono);
+    font-size: .77rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .disclaimer strong { color: var(--danger); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  .footer-logo {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    color: var(--text);
+    margin-bottom: .5rem;
+  }
+
+  .footer-logo span { color: var(--accent); }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--muted);
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 0 2.5rem;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .anim { animation: fadeUp .6s ease both; }
+  .anim-d1 { animation-delay: .1s; }
+  .anim-d2 { animation-delay: .2s; }
+  .anim-d3 { animation-delay: .3s; }
+  .anim-d4 { animation-delay: .4s; }
+
+  @media (max-width: 768px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .terminal { display: none; }
+    .cmd-item { grid-template-columns: 1fr; }
+    .rep-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">DEAL<span>BOT</span></a>
+  <ul class="nav-links">
+    <li><a href="#use-cases">Use Cases</a></li>
+    <li><a href="#commands">Commands</a></li>
+    <li><a href="#lifecycle">Lifecycle</a></li>
+    <li><a href="#reputation">Reputation</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-inner container">
+    <div>
+      <div class="hero-badge anim">DealBot v1 — Now Live</div>
+      <h1 class="anim anim-d1">The Deal Ledger for <span class="hl">Livestream</span> Hosts</h1>
+      <p class="hero-desc anim anim-d2">
+        A voluntary, non-custodial Discord bot for recording, tracking, and verifying deal agreements between agencies and hosts across BigoLive, TikTok, Tango, YouTube, and Twitch. Transparent. Auditable. Accountable.
+      </p>
+      <div class="btn-group anim anim-d3">
+        <a href="#commands" class="btn btn-primary">→ Explore Commands</a>
+        <a href="#use-cases" class="btn btn-ghost">See Use Cases</a>
+      </div>
+    </div>
+
+    <div class="terminal anim anim-d4">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="terminal-title">DealBot — Discord</span>
+      </div>
+      <div class="terminal-body">
+        <span class="t-prompt">@agency » </span><span class="t-cmd">/deal start</span> <span class="t-arg">@streamhost</span><br/>
+        <span class="t-output">📬 DM wizard opened. Step 1/6 — Select network...</span><br/>
+        <span class="t-output">✓ Network: <b style="color:#EDF2FF">BigoLive</b></span><br/>
+        <span class="t-output">✓ Type: <b style="color:#EDF2FF">Hosting</b>  ·  Amount: <b style="color:#EDF2FF">2000 diamonds</b></span><br/>
+        <span class="t-output">✓ Due: <b style="color:#EDF2FF">2025-07-15</b></span><br/>
+        <span class="t-blank"></span>
+        <span class="t-success">✅ Deal created</span> — ID: <span class="t-id">3F9A2B01</span><br/>
+        <span class="t-output">📨 @streamhost notified via DM</span><br/>
+        <span class="t-blank"></span>
+        <span class="t-prompt">@streamhost » </span><span class="t-cmd">/deal confirm</span> <span class="t-arg">3F9A2B01</span><br/>
+        <span class="t-success">🟢 Deal ACTIVE — both parties confirmed</span><br/>
+        <span class="t-blank"></span>
+        <span class="t-prompt">@agency » </span><span class="t-cmd">/rep</span> <span class="t-arg">@streamhost</span><br/>
+        <span class="t-output">🌟 Score: <b style="color:#00E5A0">812 / 1000</b>  ·  Tier: Excellent</span><br/>
+        <span class="t-output">Deals: 24 completed · 0 defaulted</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- USE CASES -->
+<section id="use-cases">
+  <div class="container">
+    <div class="section-label">Use Cases</div>
+    <h2>Built for the Livestream Economy</h2>
+    <p class="subtitle">Whether you're an independent host or running a multi-platform agency, DealBot gives every party a shared, tamper-resistant record of what was agreed.</p>
+
+    <div class="use-cases">
+      <div class="use-card">
+        <div class="use-icon">🏢</div>
+        <h3>Agencies Managing Multiple Hosts</h3>
+        <p>Track dozens of active hosting and gifting deals across BigoLive, TikTok, and Tango simultaneously. Export CSV reports for accounting. Assign mediator roles to resolve disputes without involving Discord admins.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">📡</div>
+        <h3>Independent Livestream Hosts</h3>
+        <p>Create a verifiable paper trail before accepting deals. Both parties confirm — no more disputed agreements over DMs. Your reputation score follows you across servers, showing agencies you're reliable.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">🤝</div>
+        <h3>Collaboration & Promotion Deals</h3>
+        <p>Going live with another creator? Record collab agreements with clear terms, amounts, and deadlines. Dual-confirmation ensures both sides are locked in before you start.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">🔍</div>
+        <h3>Due Diligence Before Partnering</h3>
+        <p>Check any user's reputation score before entering a deal. See their completion rate, platform-by-platform breakdown, and history of defaults — weighted by recency and deal volume.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">⚖️</div>
+        <h3>Dispute Resolution Communities</h3>
+        <p>Server admins and mediators can resolve flagged deals with full audit trail access. Reputation scores freeze during disputes — no manipulation while a case is open.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">📋</div>
+        <h3>Platform-Agnostic Tracking</h3>
+        <p>Deals across BigoLive, TikTok, Tango, YouTube, and Twitch all in one place. Filter your deal list by platform. See your cross-network aggregate reputation at a glance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- COMMANDS -->
+<section id="commands" class="cmd-section">
+  <div class="container">
+    <div class="section-label">Commands Reference</div>
+    <h2>Every Command, Explained</h2>
+    <p class="subtitle">All commands are Discord slash commands. Parameters in <span style="color:var(--warn);font-family:var(--mono)">&lt;angle brackets&gt;</span> are required; <span style="color:var(--muted);font-family:var(--mono)">[brackets]</span> are optional.</p>
+
+    <div class="cmd-tabs">
+      <button class="cmd-tab active" onclick="showTab('deal')">Deal Management</button>
+      <button class="cmd-tab" onclick="showTab('rep')">Reputation</button>
+      <button class="cmd-tab" onclick="showTab('admin')">Admin & Rate Limits</button>
+      <button class="cmd-tab" onclick="showTab('misc')">Personal & Info</button>
+    </div>
+
+    <!-- DEAL -->
+    <div id="tab-deal" class="cmd-panel active">
+      <div class="cmd-list">
+        <div class="cmd-item">
+          <div class="cmd-name">/deal start <span class="arg">&lt;counterparty&gt;</span></div>
+          <div class="cmd-desc">
+            Opens a private DM wizard (6 steps) to create a new deal: select network, your username, counterparty username, deal type (hosting, gifting, promotion, collab, other), amount + currency, and due date. Creates deal in <b style="color:var(--warn)">PENDING_CONFIRMATION</b> status and notifies the counterparty.
+            <div class="cmd-params">
+              <div class="cmd-param"><b>counterparty</b> — Discord user you're dealing with (required). Cannot deal with yourself or a bot.</div>
+            </div>
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal confirm <span class="arg">&lt;deal_id&gt;</span></div>
+          <div class="cmd-desc">Confirms a pending deal. Both parties must call this command before the deal moves to <b style="color:var(--accent)">ACTIVE</b> status.
+            <div class="cmd-params"><div class="cmd-param"><b>deal_id</b> — 8-character deal ID (e.g. 3F9A2B01)</div></div>
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal complete <span class="arg">&lt;deal_id&gt;</span></div>
+          <div class="cmd-desc">Signals your side of the deal is done. Works from ACTIVE or OVERDUE status. Once both parties call this, the deal moves to <b style="color:var(--accent)">COMPLETED</b> and reputation scores update.
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal dispute <span class="arg">&lt;deal_id&gt;</span> <span class="arg">&lt;reason&gt;</span></div>
+          <div class="cmd-desc">Flags a deal as disputed. Freezes reputation score updates until an admin resolves it. Subject to server-configured dispute cooldown.
+            <div class="cmd-params">
+              <div class="cmd-param"><b>reason</b> — Description of the dispute (10–500 characters, required)</div>
+            </div>
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal note <span class="arg">&lt;deal_id&gt;</span> <span class="arg">&lt;note&gt;</span></div>
+          <div class="cmd-desc">Appends a permanent, immutable note to a deal. Notes cannot be edited or deleted. Only parties to the deal may add notes.
+            <div class="cmd-params"><div class="cmd-param"><b>note</b> — 3–1000 characters</div></div>
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal view <span class="arg">&lt;deal_id&gt;</span> <span class="opt">[audit]</span></div>
+          <div class="cmd-desc">Shows full deal details: parties, status, amounts, confirmation flags, and notes. Set audit=true to include the complete immutable audit trail of every status change.
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal list <span class="opt">[status]</span> <span class="opt">[network]</span></div>
+          <div class="cmd-desc">Lists all your deals with pagination (8 per page). Filter by status (active, completed, disputed, etc.) or by network (TikTok, BigoLive, etc.).
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/deal search <span class="arg">&lt;deal_id&gt;</span></div>
+          <div class="cmd-desc">Finds and displays a specific deal by its 8-character ID. You must be a party to the deal to view it.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REP -->
+    <div id="tab-rep" class="cmd-panel">
+      <div class="cmd-list">
+        <div class="cmd-item">
+          <div class="cmd-name">/rep <span class="arg">&lt;user&gt;</span> <span class="opt">[network]</span></div>
+          <div class="cmd-desc">
+            Displays a user's weighted reputation score and full deal history, broken down by platform network with a global aggregate. Anyone in the server can check any user's reputation.
+            <div class="cmd-params">
+              <div class="cmd-param"><b>user</b> — The Discord member to look up (required)</div>
+              <div class="cmd-param"><b>network</b> — Optional: filter score to one specific platform (autocomplete supported)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="tab-admin" class="cmd-panel">
+      <div class="cmd-list">
+        <div class="cmd-item">
+          <div class="cmd-name">/admin resolve <span class="arg">&lt;deal_id&gt;</span> <span class="arg">&lt;resolution&gt;</span> <span class="opt">[note]</span></div>
+          <div class="cmd-desc">
+            Resolves a disputed deal by setting it to a new status. Admin or mediator role required.
+            <div class="cmd-params">
+              <div class="cmd-param"><b>resolution</b> — active, completed, or defaulted</div>
+              <div class="cmd-param"><b>note</b> — Optional admin note recorded in the audit log</div>
+            </div>
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/admin export</div>
+          <div class="cmd-desc">Exports all deals visible to the requesting admin as a CSV file attachment. Useful for agency recordkeeping and accounting.</div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/admin backup</div>
+          <div class="cmd-desc">Triggers an immediate SQLite database backup stored in the configured BACKUP_DIR. Backups run automatically daily at 02:00 UTC.</div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/admin stats <span class="opt">[days]</span></div>
+          <div class="cmd-desc">Displays command usage statistics for this server over the last N days (default: 30).</div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/rate_limits view</div>
+          <div class="cmd-desc">Shows the current rate limit configuration for this server.</div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/rate_limits set <span class="opt">[options]</span></div>
+          <div class="cmd-desc">
+            Admin only. Configure server-specific limits — any omitted parameter keeps its current value.
+            <div class="cmd-params">
+              <div class="cmd-param"><b>max_open</b> — Max open deals per user (default: 10)</div>
+              <div class="cmd-param"><b>max_volume</b> — Max daily deal volume per user (default: 50,000)</div>
+              <div class="cmd-param"><b>cooldown_hours</b> — Hours between disputes per user (default: 24)</div>
+              <div class="cmd-param"><b>reminder_mins</b> — Reminder loop frequency in minutes (default: 30)</div>
+              <div class="cmd-param"><b>weekly_summary</b> — Enable weekly digest DMs (default: true)</div>
+              <div class="cmd-param"><b>mediator_role</b> — Role name with mediator permissions (default: DealMediator)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MISC -->
+    <div id="tab-misc" class="cmd-panel">
+      <div class="cmd-list">
+        <div class="cmd-item">
+          <div class="cmd-name">/export_data</div>
+          <div class="cmd-desc">Downloads all your personal deal data as a CSV file (GDPR-style export). Includes all deals you were party to and all notes you authored.</div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-name">/about</div>
+          <div class="cmd-desc">Shows a public info embed explaining what DealBot does, what it doesn't do, its data policy, and how cross-network reputation scoring works.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- LIFECYCLE -->
+<section id="lifecycle">
+  <div class="container">
+    <div class="section-label">Deal Lifecycle</div>
+    <h2>From Handshake to Completion</h2>
+    <p class="subtitle">Every deal follows a strict state machine. Status transitions are logged immutably — nothing can be silently changed after the fact.</p>
+
+    <div class="lifecycle-flow">
+      <span class="lf-node lf-pending">🟡 PENDING</span>
+      <span class="lf-arrow">→</span>
+      <span class="lf-node lf-active">🟢 ACTIVE</span>
+      <span class="lf-arrow">→</span>
+      <span class="lf-node lf-pcomp">🔵 PENDING COMPLETION</span>
+      <span class="lf-arrow">→</span>
+      <span class="lf-node lf-done">✅ COMPLETED</span>
+      <span class="lf-branch" style="margin-left:.5rem">| also: ACTIVE →</span>
+      <span class="lf-node lf-disputed">🔴 DISPUTED</span>
+      <span class="lf-arrow">→</span>
+      <span class="lf-node lf-done">RESOLVED</span>
+      <span style="color:var(--muted2)"> or </span>
+      <span class="lf-node lf-default">⛔ DEFAULTED</span>
+    </div>
+
+    <div class="status-grid">
+      <div class="status-item">
+        <div class="status-badge lf-pending">🟡 PENDING_CONFIRMATION</div>
+        <p>Deal created, awaiting confirmation from both parties. Counterparty is notified via DM.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-active">🟢 ACTIVE</div>
+        <p>Both parties confirmed. Deal is in progress. Reputation scores are being tracked.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-pcomp">🔵 PENDING_COMPLETION</div>
+        <p>One party marked their side done. Waiting for the other to confirm completion.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-done">✅ COMPLETED</div>
+        <p>Both parties confirmed. Deal closed successfully. Positive rep impact applied.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-disputed">🔴 DISPUTED</div>
+        <p>Flagged by a party. Reputation updates frozen until admin/mediator resolves it.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-overdue">🟠 OVERDUE</div>
+        <p>Deal is past its due date and not yet resolved. Both parties receive DM alerts.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-default">⛔ DEFAULTED</div>
+        <p>Admin-set terminal status for failed deals. Negative rep impact recorded.</p>
+      </div>
+      <div class="status-item">
+        <div class="status-badge lf-cancel">⚫ CANCELLED</div>
+        <p>Cancelled before the deal was ever activated. No rep impact.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- REPUTATION -->
+<section id="reputation">
+  <div class="container">
+    <div class="section-label">Reputation System</div>
+    <h2>Trust You Can Measure</h2>
+    <p class="subtitle">DealBot's weighted reputation system builds a cross-platform trust profile over time. Scores decay with inactivity and scale with deal volume.</p>
+
+    <div class="rep-grid">
+      <div class="rep-tiers">
+        <div class="rep-tier">
+          <div class="rep-tier-score">750 – 1000</div>
+          <div class="rep-tier-name" style="color:var(--accent)">🌟 Excellent</div>
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:100%;background:var(--accent)"></div></div>
+        </div>
+        <div class="rep-tier">
+          <div class="rep-tier-score">600 – 749</div>
+          <div class="rep-tier-name" style="color:#34D399">✅ Good</div>
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:75%;background:#34D399"></div></div>
+        </div>
+        <div class="rep-tier">
+          <div class="rep-tier-score">400 – 599</div>
+          <div class="rep-tier-name" style="color:var(--warn)">🟡 Fair</div>
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:55%;background:var(--warn)"></div></div>
+        </div>
+        <div class="rep-tier">
+          <div class="rep-tier-score">200 – 399</div>
+          <div class="rep-tier-name" style="color:#FB923C">🟠 Poor</div>
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:35%;background:#FB923C"></div></div>
+        </div>
+        <div class="rep-tier">
+          <div class="rep-tier-score">0 – 199</div>
+          <div class="rep-tier-name" style="color:var(--danger)">🔴 Very Poor</div>
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:15%;background:var(--danger)"></div></div>
+        </div>
+      </div>
+
+      <div class="scoring-card">
+        <h4>How Scoring Works</h4>
+        <p>Each deal contributes a signed weighted score based on:</p>
+        <ul>
+          <li><b style="color:var(--text)">Recency</b> — Scores decay with a 180-day half-life. Recent deals matter more.</li>
+          <li><b style="color:var(--text)">Volume</b> — Larger deals are weighted more, using a log scale to prevent gaming.</li>
+          <li><b style="color:var(--text)">Outcome</b> — Completed = positive. Defaulted or overdue = negative. Disputed = excluded (frozen).</li>
+          <li><b style="color:var(--text)">Per-network</b> — Scores are calculated per platform, plus a global aggregate.</li>
+        </ul>
+        <br/>
+        <p>Use <span style="color:var(--accent2);font-family:var(--mono)">/rep @user</span> to check anyone's score. Filter by network to see platform-specific trust levels.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PRIVACY & DATA -->
+<section id="privacy">
+  <div class="container">
+    <div class="section-label">Privacy & Data</div>
+    <h2>Your Data, Transparent and Portable</h2>
+    <p class="subtitle">DealBot stores only what's needed to operate the ledger. No third-party services. No hidden data sharing.</p>
+
+    <div class="privacy-grid">
+      <div class="privacy-item">
+        <div class="privacy-icon">🗄️</div>
+        <div>
+          <h4>Local SQLite Storage</h4>
+          <p>All data is stored in a local SQLite database on the bot's host server. No external databases or cloud services.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">📤</div>
+        <div>
+          <h4>Personal Data Export</h4>
+          <p>Use /export_data at any time to download all your deals and notes as a CSV. GDPR-style portability built in.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">🔒</div>
+        <div>
+          <h4>Encrypted Backups</h4>
+          <p>Daily automated backups at 02:00 UTC. Optional AES-256-GCM encryption for sensitive deployments.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">📜</div>
+        <div>
+          <h4>Immutable Audit Log</h4>
+          <p>Every status change is append-only and tamper-evident. The audit trail cannot be altered retroactively.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">🚫</div>
+        <div>
+          <h4>No Third-Party Sharing</h4>
+          <p>No data is sent to any third-party service. What goes into DealBot stays in DealBot.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon">🔔</div>
+        <div>
+          <h4>DM Reminders</h4>
+          <p>Automatic reminders at ≤48h, ≤24h before due dates, and on overdue. Weekly digest on Sundays 00:00 UTC (configurable).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>⚠ Disclaimer:</strong> DealBot records voluntary agreements only. It does <b>not</b> handle, hold, or move money or digital assets. It does not enforce deals legally or financially. It does not determine fraud — only records objective outcomes. DealBot is not affiliated with BigoLive, TikTok, Tango, YouTube, or Twitch. Use responsibly and in good faith.
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- NETWORKS -->
+<section style="padding:4rem 2.5rem; text-align:center;">
+  <div class="container">
+    <div class="section-label" style="text-align:center">Supported Networks</div>
+    <h2 style="text-align:center">Works Where You Stream</h2>
+    <div class="networks">
+      <div class="network-pill">🔴 BigoLive</div>
+      <div class="network-pill">🎵 TikTok</div>
+      <div class="network-pill">🟠 Tango</div>
+      <div class="network-pill">▶️ YouTube</div>
+      <div class="network-pill">💜 Twitch</div>
+      <div class="network-pill">🌐 Other</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">DEAL<span>BOT</span> v1</div>
+  <p>Built by <a href="https://mountainviewprovisions.com" target="_blank">Mountain View Provisions LLC</a> · Non-custodial · Non-affiliated · Open to all platforms</p>
+</footer>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.cmd-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.cmd-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
