@@ -9,20 +9,24 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from bot.database import init_db, close_db
-from bot.tasks.reminder_loop import reminder_task, weekly_summary_task, backup_task
-from bot.utils.logger import setup_logging, DiscordChannelHandler
+from bot.database import close_db, init_db
+from bot.tasks.reminder_loop import backup_task, reminder_task, weekly_summary_task
+from bot.utils.logger import DiscordChannelHandler, setup_logging
 
 load_dotenv()
 setup_logging()
 log = logging.getLogger("dealbot")
 
 EXTENSIONS = [
-    "bot.commands.deal",
-    "bot.commands.reputation",
-    "bot.commands.rate_limits",
     "bot.commands.admin",
+    "bot.commands.agency",
+    "bot.commands.analytics",
+    "bot.commands.deal",
+    "bot.commands.governance",
+    "bot.commands.help",
     "bot.commands.misc",
+    "bot.commands.rate_limits",
+    "bot.commands.reputation",
 ]
 
 intents = discord.Intents.default()
@@ -84,10 +88,11 @@ async def main():
         await bot.load_extension(ext)
         log.info(f"  ✓ {ext}")
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(reminder_task(bot),       name="reminder_task")
+    # asyncio.get_running_loop() is required inside an async context (get_event_loop is deprecated).
+    loop = asyncio.get_running_loop()
+    loop.create_task(reminder_task(bot), name="reminder_task")
     loop.create_task(weekly_summary_task(bot), name="weekly_summary_task")
-    loop.create_task(backup_task(bot),         name="backup_task")
+    loop.create_task(backup_task(bot), name="backup_task")
     log.info("Background tasks registered.")
 
     try:

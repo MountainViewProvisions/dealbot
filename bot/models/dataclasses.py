@@ -6,7 +6,6 @@ from typing import Optional
 
 from bot.models.enums import DealStatus
 
-
 @dataclass
 class UserModel:
     id: int
@@ -14,12 +13,10 @@ class UserModel:
     discord_name: str
     created_at: datetime
 
-
 @dataclass
 class NetworkModel:
     id: int
     name: str
-
 
 @dataclass
 class UserNetworkProfile:
@@ -30,7 +27,6 @@ class UserNetworkProfile:
     network_name: str = ""
     discord_name: str = ""
     discord_id: int = 0
-
 
 @dataclass
 class DealModel:
@@ -59,7 +55,6 @@ class DealModel:
     completion_confirmed_by_a: bool = False
     completion_confirmed_by_b: bool = False
 
-
 @dataclass
 class DealNote:
     id: int
@@ -68,7 +63,6 @@ class DealNote:
     note_text: str
     created_at: datetime
     author_username: str = ""
-
 
 @dataclass
 class AuditEntry:
@@ -81,7 +75,6 @@ class AuditEntry:
     metadata: Optional[str]
     timestamp: datetime
     actor_username: str = ""
-
 
 @dataclass
 class NetworkReputation:
@@ -99,7 +92,6 @@ class NetworkReputation:
         if self.total_deals == 0:
             return 0.0
         return round((self.completed / self.total_deals) * 100, 1)
-
 
 @dataclass
 class GlobalReputation:
@@ -119,7 +111,6 @@ class GlobalReputation:
             return 0.0
         return round((self.total_completed / self.total_deals) * 100, 1)
 
-
 @dataclass
 class ServerLimits:
     guild_id: int
@@ -129,7 +120,6 @@ class ServerLimits:
     reminder_freq_minutes: int = 30
     weekly_summary_enabled: bool = True
     mediator_role_name: str = "DealMediator"
-
 
 @dataclass
 class RateLimitState:

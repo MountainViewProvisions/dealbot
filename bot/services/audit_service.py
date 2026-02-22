@@ -10,7 +10,6 @@ from bot.models.enums import ActionType
 
 log = logging.getLogger(__name__)
 
-
 async def log_transition(
     db: aiosqlite.Connection,
     deal_id: int,
@@ -33,7 +32,6 @@ async def log_transition(
         f"Audit: deal {deal_id} | {previous_status} → {new_status} "
         f"| action={action_type.value} | actor={actor_profile_id}"
     )
-
 
 async def get_deal_history(
     db: aiosqlite.Connection, deal_id: int

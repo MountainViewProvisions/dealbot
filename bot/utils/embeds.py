@@ -28,7 +28,6 @@ STATUS_EMOJI: dict[str, str] = {
     "cancelled":            "⚫",
 }
 
-
 def deal_embed(deal_row, notes=None, audit=None) -> discord.Embed:
     status = deal_row["status"]
     embed = discord.Embed(
@@ -109,7 +108,6 @@ def deal_embed(deal_row, notes=None, audit=None) -> discord.Embed:
     embed.set_footer(text=f"Created: {deal_row['created_at'][:10]}")
     return embed
 
-
 def deal_list_embed(
     deals: Sequence,
     title: str = "Your Deals",
@@ -131,7 +129,6 @@ def deal_list_embed(
     embed.description = "\n".join(lines)
     embed.set_footer(text=f"Page {page}/{total_pages}")
     return embed
-
 
 def reputation_embed(
     rep: GlobalReputation,
@@ -196,7 +193,6 @@ def reputation_embed(
     )
     return embed
 
-
 def rate_limits_embed(limits: ServerLimits) -> discord.Embed:
     embed = discord.Embed(
         title="⚙️ Server Rate Limits",
@@ -229,7 +225,6 @@ def rate_limits_embed(limits: ServerLimits) -> discord.Embed:
         inline=True,
     )
     return embed
-
 
 def about_embed() -> discord.Embed:
     embed = discord.Embed(
@@ -267,14 +262,11 @@ def about_embed() -> discord.Embed:
     embed.set_footer(text="DealBot — Open ledger. No money movement. No platform affiliation.")
     return embed
 
-
 def error_embed(message: str) -> discord.Embed:
     return discord.Embed(description=f"❌ {message}", color=discord.Color.red())
 
-
 def success_embed(message: str) -> discord.Embed:
     return discord.Embed(description=message, color=discord.Color.green())
-
 
 def info_embed(title: str, message: str) -> discord.Embed:
     return discord.Embed(title=title, description=message, color=discord.Color.blurple())

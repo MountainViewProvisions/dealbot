@@ -1,99 +1,200 @@
 from __future__ import annotations
 
+"""
+reputation_service.py
+=====================
+Single source of truth for all reputation mutations.
+
+Rules
+-----
+- Reputation range: 0–1000 (clamped, never outside)
+- Starting value: 500
+- On deal COMPLETED (on-time):    +10 rep, completed_deals+1
+  └─ If 10 consecutive clean deals: +25 bonus
+- On deal COMPLETED (was OVERDUE): -15 rep, completed_deals+1, reset consecutive
+- On deal DEFAULTED:               -40 rep, failed_deals+1, reset consecutive
+- On confirmed SCAM (admin):       -100 rep, strikes+1, reset consecutive
+- On deal DISPUTED (escalated):    dispute_count+1 (no rep change at escalation)
+- Admin manual adjust:             arbitrary delta, always applied
+"""
+
 import logging
-import math
-from datetime import datetime, timezone
 from typing import Optional
 
 import aiosqlite
 
-from bot.database import queries
-from bot.models.dataclasses import GlobalReputation, NetworkReputation
+from bot.database.reputation_queries import (
+    apply_reputation_delta,
+    admin_adjust_reputation,
+    get_host_reputation,
+    ensure_host_exists,
+)
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("dealbot.reputation_service")
 
-_HALF_LIFE_DAYS  = 180.0
-_LAMBDA          = math.log(2) / _HALF_LIFE_DAYS
-_SCORE_MULT      = 50.0
-_SCORE_ANCHOR    = 500.0
+# Reason string constants — used as de-dup keys in reputation_log
+REASON_COMPLETED_ONTIME  = "deal_completed_ontime"
+REASON_COMPLETED_LATE    = "deal_completed_late"
+REASON_FAILED            = "deal_failed"
+REASON_SCAM              = "deal_scam_confirmed"
+REASON_DISPUTE_ESCALATED = "deal_dispute_escalated"
+REASON_STREAK_BONUS      = "streak_bonus_10_clean"
 
+STREAK_THRESHOLD = 10
 
-def _age_days(ts_str: str) -> float:
-    try:
-        dt = datetime.fromisoformat(ts_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return max(0.0, (datetime.now(tz=timezone.utc) - dt).total_seconds() / 86_400)
-    except Exception:
-        return 0.0
+# Public API
 
-
-def _deal_weight(amount: float, age_days: float) -> float:
-    recency = math.exp(-_LAMBDA * age_days)
-    volume  = math.log10(1.0 + max(0.0, amount))
-    return recency * volume
-
-
-def calculate_score(rows: list) -> float:
-    raw = 0.0
-    for row in rows:
-        w      = _deal_weight(row["amount"], _age_days(row["created_at"]))
-        status = row["status"]
-        if status == "completed":
-            raw += w
-        elif status in ("defaulted", "overdue"):
-            raw -= w
-    return round(max(0.0, min(1000.0, _SCORE_ANCHOR + raw * _SCORE_MULT)), 1)
-
-
-async def get_reputation(
+async def on_deal_completed(
     db: aiosqlite.Connection,
-    target_discord_id: int,
-    target_discord_name: str,
-    filter_network_name: Optional[str] = None,
-) -> GlobalReputation:
-    user = await queries.get_user_by_discord_id(db, target_discord_id)
-    if not user:
-        return GlobalReputation(discord_name=target_discord_name)
+    deal_id: int,
+    party_a_discord_id: int,
+    party_b_discord_id: int,
+    was_overdue: bool = False,
+) -> None:
+    """Call when a deal transitions to COMPLETED. Updates both parties."""
+    for discord_id in (party_a_discord_id, party_b_discord_id):
+        await _handle_completed(db, discord_id, deal_id, was_overdue)
+        await _evaluate_probation_safe(db, discord_id)
 
-    network_id: Optional[int] = None
-    if filter_network_name:
-        net = await queries.get_network_by_name(db, filter_network_name)
-        if net:
-            network_id = net["id"]
+async def on_deal_defaulted(
+    db: aiosqlite.Connection,
+    deal_id: int,
+    defaulting_discord_id: int,
+) -> None:
+    """Call when a deal is resolved as DEFAULTED for a specific party."""
+    applied = await apply_reputation_delta(
+        db,
+        discord_id=defaulting_discord_id,
+        delta=-40,
+        deal_id=deal_id,
+        reason=REASON_FAILED,
+        increment_failed=True,
+        reset_consecutive=True,
+    )
+    if applied:
+        log.info(f"Reputation: host {defaulting_discord_id} -40 (defaulted) | deal={deal_id}")
+    await _evaluate_probation_safe(db, defaulting_discord_id)
 
-    rows = await queries.get_reputation_rows(db, user["id"], network_id)
+async def on_deal_scam_confirmed(
+    db: aiosqlite.Connection,
+    deal_id: int,
+    scammer_discord_id: int,
+) -> None:
+    """Admin-triggered confirmed scam — maximum reputation penalty."""
+    applied = await apply_reputation_delta(
+        db,
+        discord_id=scammer_discord_id,
+        delta=-100,
+        deal_id=deal_id,
+        reason=REASON_SCAM,
+        increment_strikes=True,
+        increment_failed=True,
+        reset_consecutive=True,
+    )
+    if applied:
+        log.warning(f"Reputation: host {scammer_discord_id} -100 (SCAM confirmed) | deal={deal_id}")
+    await _evaluate_probation_safe(db, scammer_discord_id)
 
-    grouped: dict[str, list] = {}
-    for row in rows:
-        grouped.setdefault(row["network_name"], []).append(row)
+async def on_dispute_escalated(
+    db: aiosqlite.Connection,
+    deal_id: int,
+    disputing_discord_id: int,
+) -> None:
+    """Increment dispute_count — no score change at escalation time."""
+    await ensure_host_exists(db, disputing_discord_id)
+    applied = await apply_reputation_delta(
+        db,
+        discord_id=disputing_discord_id,
+        delta=0,
+        deal_id=deal_id,
+        reason=REASON_DISPUTE_ESCALATED,
+        increment_disputes=True,
+    )
+    if applied:
+        log.info(f"Reputation: host {disputing_discord_id} dispute_count+1 | deal={deal_id}")
 
-    global_rep = GlobalReputation(discord_name=target_discord_name)
-    all_rows: list = []
+async def on_admin_adjust(
+    db: aiosqlite.Connection,
+    discord_id: int,
+    delta: int,
+    reason: str,
+    admin_discord_id: int,
+) -> tuple[int, int]:
+    """Manual admin adjustment. Returns (old_score, new_score)."""
+    old, new = await admin_adjust_reputation(db, discord_id, delta, reason)
+    sign = "+" if delta >= 0 else ""
+    log.info(
+        f"Reputation: admin {admin_discord_id} adjusted host {discord_id} "
+        f"{sign}{delta} ({old}→{new}) | reason: {reason}"
+    )
+    await _evaluate_probation_safe(db, discord_id)
+    return old, new
 
-    for net_name, net_rows in sorted(grouped.items()):
-        completed = sum(1 for r in net_rows if r["status"] == "completed")
-        defaulted = sum(1 for r in net_rows if r["status"] == "defaulted")
-        overdue   = sum(1 for r in net_rows if r["status"] == "overdue")
-        disputed  = sum(1 for r in net_rows if r["status"] == "disputed")
-        volume    = sum(r["amount"] for r in net_rows)
-        score     = calculate_score(net_rows)
+# Probation evaluation helper (imported lazily to break circular dep)
 
-        net_rep = NetworkReputation(
-            network_name=net_name,
-            completed=completed, defaulted=defaulted,
-            overdue=overdue, disputed=disputed,
-            total_deals=len(net_rows),
-            total_volume=volume, weighted_score=score,
+async def _evaluate_probation_safe(
+    db: aiosqlite.Connection, discord_id: int
+) -> None:
+    """Fire-and-forget probation check after any rep change."""
+    try:
+        # Late import to avoid circular: governance_service → reputation_queries (safe)
+        from bot.services.governance_service import evaluate_probation
+        await evaluate_probation(db, discord_id)
+    except Exception as exc:
+        log.warning(f"Probation evaluation failed for host {discord_id}: {exc}")
+
+# Internal
+
+async def _handle_completed(
+    db: aiosqlite.Connection,
+    discord_id: int,
+    deal_id: int,
+    was_overdue: bool,
+) -> None:
+    if was_overdue:
+        applied = await apply_reputation_delta(
+            db,
+            discord_id=discord_id,
+            delta=-15,
+            deal_id=deal_id,
+            reason=REASON_COMPLETED_LATE,
+            increment_completed=True,
+            reset_consecutive=True,
         )
-        global_rep.by_network.append(net_rep)
-        all_rows.extend(net_rows)
-        global_rep.total_completed += completed
-        global_rep.total_defaulted += defaulted
-        global_rep.total_overdue   += overdue
-        global_rep.total_disputed  += disputed
-        global_rep.total_deals     += len(net_rows)
-        global_rep.total_volume    += volume
+        if applied:
+            log.info(f"Reputation: host {discord_id} -15 (late completion) | deal={deal_id}")
+    else:
+        applied = await apply_reputation_delta(
+            db,
+            discord_id=discord_id,
+            delta=+10,
+            deal_id=deal_id,
+            reason=REASON_COMPLETED_ONTIME,
+            increment_completed=True,
+            increment_consecutive=True,
+        )
+        if applied:
+            log.info(f"Reputation: host {discord_id} +10 (completed) | deal={deal_id}")
+            await _check_streak_bonus(db, discord_id, deal_id)
 
-    global_rep.weighted_score = calculate_score(all_rows)
-    return global_rep
+async def _check_streak_bonus(
+    db: aiosqlite.Connection, discord_id: int, deal_id: int
+) -> None:
+    row = await get_host_reputation(db, discord_id)
+    if not row:
+        return
+    consec = row["consecutive_clean_deals"]
+    if consec > 0 and consec % STREAK_THRESHOLD == 0:
+        milestone_reason = f"{REASON_STREAK_BONUS}_{consec}"
+        applied = await apply_reputation_delta(
+            db,
+            discord_id=discord_id,
+            delta=+25,
+            deal_id=deal_id,
+            reason=milestone_reason,
+        )
+        if applied:
+            log.info(
+                f"Reputation: host {discord_id} +25 streak bonus "
+                f"({consec} clean deals) | deal={deal_id}"
+            )

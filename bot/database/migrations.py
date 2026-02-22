@@ -6,7 +6,6 @@ import aiosqlite
 
 log = logging.getLogger(__name__)
 
-
 async def _add_column_if_missing(
     db: aiosqlite.Connection,
     table: str,
@@ -18,7 +17,6 @@ async def _add_column_if_missing(
     if column not in cols:
         await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
         log.info(f"Migration: added {table}.{column}")
-
 
 async def run_migrations(db: aiosqlite.Connection) -> None:
     log.info("Running schema migrations…")

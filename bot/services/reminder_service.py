@@ -9,6 +9,7 @@ import discord
 from bot.database import get_db
 from bot.database import queries
 from bot.services.deal_service import system_mark_overdue
+from bot.utils.embeds import STATUS_EMOJI
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +53,6 @@ async def run_weekly_summary(bot: discord.Client) -> None:
             f"{datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')}"
         ]
         for d in deals:
-            from bot.utils.embeds import STATUS_EMOJI
             emoji = STATUS_EMOJI.get(d["status"], "•")
             lines.append(
                 f"{emoji} `{d['deal_uuid']}` [{d['network_name']}] "

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import logging
@@ -15,11 +16,12 @@ from bot.database import queries
 
 log = logging.getLogger(__name__)
 
-BACKUP_DIR     = Path(os.getenv("BACKUP_DIR", "./backups"))
+BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "./backups"))
 ENCRYPTION_KEY = os.getenv("BACKUP_ENCRYPTION_KEY", "")
 
 
 def _get_fernet():
+    """Return a Fernet instance derived from BACKUP_ENCRYPTION_KEY, or None if not configured."""
     if not ENCRYPTION_KEY:
         return None
     try:
@@ -35,21 +37,20 @@ def _get_fernet():
 
 async def run_daily_backup(db: aiosqlite.Connection) -> Optional[Path]:
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    ts   = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
     path = BACKUP_DIR / f"dealbot_{ts}.db"
     try:
         src_path = os.getenv("DATABASE_PATH", "./dealbot.db")
 
         def _do_backup():
-            src  = sqlite3.connect(src_path)
+            src = sqlite3.connect(src_path)
             dest = sqlite3.connect(str(path))
             with dest:
                 src.backup(dest)
             src.close()
             dest.close()
 
-        import asyncio
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, _do_backup)
 
         fernet = _get_fernet()
@@ -70,6 +71,7 @@ async def run_daily_backup(db: aiosqlite.Connection) -> Optional[Path]:
 
 
 def _prune(keep: int = 7) -> None:
+    """Remove old backup files beyond the keep count."""
     files = sorted(BACKUP_DIR.glob("dealbot_*"), reverse=True)
     for old in files[keep:]:
         try:
@@ -80,8 +82,8 @@ def _prune(keep: int = 7) -> None:
 
 async def export_all_deals_csv(db: aiosqlite.Connection, user_id: int) -> str:
     rows = await queries.get_all_deals_for_user(db, user_id)
-    buf  = io.StringIO()
-    w    = csv.writer(buf)
+    buf = io.StringIO()
+    w = csv.writer(buf)
     w.writerow(["deal_uuid", "network", "party_a", "party_b", "type",
                 "amount", "currency", "due_date", "status", "created_at"])
     for r in rows:
@@ -101,7 +103,7 @@ async def export_personal_data(db: aiosqlite.Connection, discord_id: int) -> str
     notes = await queries.get_all_notes_by_user(db, user["id"])
 
     buf = io.StringIO()
-    w   = csv.writer(buf)
+    w = csv.writer(buf)
     w.writerow(["=== DEALS ==="])
     w.writerow(["deal_uuid", "network", "party_a", "party_b", "type",
                 "amount", "currency", "due_date", "status", "created_at"])

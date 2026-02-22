@@ -8,7 +8,6 @@ import aiosqlite
 
 log = logging.getLogger(__name__)
 
-
 async def upsert_user(db: aiosqlite.Connection, discord_id: int, discord_name: str) -> int:
     await db.execute(
         """
@@ -22,26 +21,21 @@ async def upsert_user(db: aiosqlite.Connection, discord_id: int, discord_name: s
         row = await cur.fetchone()
     return row["id"]
 
-
 async def get_user_by_discord_id(db: aiosqlite.Connection, discord_id: int) -> Optional[aiosqlite.Row]:
     async with db.execute("SELECT * FROM users WHERE discord_id=?", (discord_id,)) as cur:
         return await cur.fetchone()
-
 
 async def get_all_networks(db: aiosqlite.Connection) -> list[aiosqlite.Row]:
     async with db.execute("SELECT * FROM networks ORDER BY name") as cur:
         return await cur.fetchall()
 
-
 async def get_network_by_name(db: aiosqlite.Connection, name: str) -> Optional[aiosqlite.Row]:
     async with db.execute("SELECT * FROM networks WHERE LOWER(name)=LOWER(?)", (name,)) as cur:
         return await cur.fetchone()
 
-
 async def get_network_by_id(db: aiosqlite.Connection, nid: int) -> Optional[aiosqlite.Row]:
     async with db.execute("SELECT * FROM networks WHERE id=?", (nid,)) as cur:
         return await cur.fetchone()
-
 
 async def upsert_profile(
     db: aiosqlite.Connection, user_id: int, network_id: int, platform_username: str
@@ -63,7 +57,6 @@ async def upsert_profile(
         row = await cur.fetchone()
     return row["id"]
 
-
 async def get_profile_by_id(db: aiosqlite.Connection, profile_id: int) -> Optional[aiosqlite.Row]:
     async with db.execute(
         """
@@ -77,7 +70,6 @@ async def get_profile_by_id(db: aiosqlite.Connection, profile_id: int) -> Option
     ) as cur:
         return await cur.fetchone()
 
-
 async def get_profiles_for_user(db: aiosqlite.Connection, user_id: int) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -90,7 +82,6 @@ async def get_profiles_for_user(db: aiosqlite.Connection, user_id: int) -> list[
         (user_id,),
     ) as cur:
         return await cur.fetchall()
-
 
 async def create_deal(
     db: aiosqlite.Connection,
@@ -118,7 +109,6 @@ async def create_deal(
     await db.execute("INSERT INTO deal_confirmations (deal_id) VALUES (?)", (deal_id,))
     await db.commit()
     return deal_id
-
 
 async def get_deal_by_uuid(db: aiosqlite.Connection, deal_uuid: str) -> Optional[aiosqlite.Row]:
     async with db.execute(
@@ -149,7 +139,6 @@ async def get_deal_by_uuid(db: aiosqlite.Connection, deal_uuid: str) -> Optional
     ) as cur:
         return await cur.fetchone()
 
-
 async def update_deal_status(
     db: aiosqlite.Connection,
     deal_id: int,
@@ -165,18 +154,15 @@ async def update_deal_status(
         await db.execute("UPDATE deals SET status=? WHERE id=?", (status, deal_id))
     await db.commit()
 
-
 async def set_party_confirmed(db: aiosqlite.Connection, deal_id: int, is_party_a: bool) -> None:
     col = "party_a_confirmed" if is_party_a else "party_b_confirmed"
     await db.execute(f"UPDATE deal_confirmations SET {col}=1 WHERE deal_id=?", (deal_id,))
     await db.commit()
 
-
 async def set_completion_confirmed(db: aiosqlite.Connection, deal_id: int, is_party_a: bool) -> None:
     col = "completion_confirmed_by_a" if is_party_a else "completion_confirmed_by_b"
     await db.execute(f"UPDATE deal_confirmations SET {col}=1 WHERE deal_id=?", (deal_id,))
     await db.commit()
-
 
 async def search_deals_for_user(
     db: aiosqlite.Connection,
@@ -216,7 +202,6 @@ async def search_deals_for_user(
     ) as cur:
         return await cur.fetchall()
 
-
 async def count_deals_for_user(
     db: aiosqlite.Connection,
     user_id: int,
@@ -246,7 +231,6 @@ async def count_deals_for_user(
         row = await cur.fetchone()
     return row["cnt"]
 
-
 async def count_open_deals_for_user(db: aiosqlite.Connection, user_id: int) -> int:
     async with db.execute(
         """
@@ -261,7 +245,6 @@ async def count_open_deals_for_user(db: aiosqlite.Connection, user_id: int) -> i
         row = await cur.fetchone()
     return row["cnt"]
 
-
 async def get_daily_volume_for_user(db: aiosqlite.Connection, user_id: int) -> float:
     today = date.today().isoformat()
     async with db.execute(
@@ -275,14 +258,12 @@ async def get_daily_volume_for_user(db: aiosqlite.Connection, user_id: int) -> f
         row = await cur.fetchone()
     return float(row["vol"])
 
-
 async def get_last_dispute_time(db: aiosqlite.Connection, user_id: int) -> Optional[str]:
     async with db.execute(
         "SELECT last_dispute_at FROM user_rate_limits WHERE user_id=?", (user_id,)
     ) as cur:
         row = await cur.fetchone()
     return row["last_dispute_at"] if row else None
-
 
 async def set_last_dispute_time(db: aiosqlite.Connection, user_id: int, ts: str) -> None:
     await db.execute(
@@ -294,7 +275,6 @@ async def set_last_dispute_time(db: aiosqlite.Connection, user_id: int, ts: str)
     )
     await db.commit()
 
-
 async def get_server_config(
     db: aiosqlite.Connection, guild_id: int
 ) -> Optional[aiosqlite.Row]:
@@ -302,7 +282,6 @@ async def get_server_config(
         "SELECT * FROM server_config WHERE guild_id=?", (guild_id,)
     ) as cur:
         return await cur.fetchone()
-
 
 async def upsert_server_config(
     db: aiosqlite.Connection,
@@ -333,7 +312,6 @@ async def upsert_server_config(
     )
     await db.commit()
 
-
 async def get_deals_due_within_hours(db: aiosqlite.Connection, hours: int) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -356,7 +334,6 @@ async def get_deals_due_within_hours(db: aiosqlite.Connection, hours: int) -> li
     ) as cur:
         return await cur.fetchall()
 
-
 async def get_overdue_active_deals(db: aiosqlite.Connection) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -377,7 +354,6 @@ async def get_overdue_active_deals(db: aiosqlite.Connection) -> list[aiosqlite.R
     ) as cur:
         return await cur.fetchall()
 
-
 async def mark_overdue_deals(db: aiosqlite.Connection) -> int:
     async with db.execute(
         """
@@ -389,7 +365,6 @@ async def mark_overdue_deals(db: aiosqlite.Connection) -> int:
         count = cur.rowcount
     await db.commit()
     return count
-
 
 async def get_all_active_deals_for_user(
     db: aiosqlite.Connection, user_id: int
@@ -413,7 +388,6 @@ async def get_all_active_deals_for_user(
     ) as cur:
         return await cur.fetchall()
 
-
 async def get_all_users_with_active_deals(db: aiosqlite.Connection) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -425,7 +399,6 @@ async def get_all_users_with_active_deals(db: aiosqlite.Connection) -> list[aios
         """
     ) as cur:
         return await cur.fetchall()
-
 
 async def get_reputation_rows(
     db: aiosqlite.Connection,
@@ -452,7 +425,6 @@ async def get_reputation_rows(
     ) as cur:
         return await cur.fetchall()
 
-
 async def insert_audit_log(
     db: aiosqlite.Connection,
     deal_id: int,
@@ -472,7 +444,6 @@ async def insert_audit_log(
     )
     await db.commit()
 
-
 async def get_audit_log_for_deal(db: aiosqlite.Connection, deal_id: int) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -485,7 +456,6 @@ async def get_audit_log_for_deal(db: aiosqlite.Connection, deal_id: int) -> list
         (deal_id,),
     ) as cur:
         return await cur.fetchall()
-
 
 async def add_note(
     db: aiosqlite.Connection,
@@ -501,7 +471,6 @@ async def add_note(
     await db.commit()
     return note_id
 
-
 async def get_notes_for_deal(db: aiosqlite.Connection, deal_id: int) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -514,7 +483,6 @@ async def get_notes_for_deal(db: aiosqlite.Connection, deal_id: int) -> list[aio
         (deal_id,),
     ) as cur:
         return await cur.fetchall()
-
 
 async def log_command(
     db: aiosqlite.Connection,
@@ -532,7 +500,6 @@ async def log_command(
         (guild_id, user_id, command, 1 if success else 0, detail),
     )
     await db.commit()
-
 
 async def get_command_stats(
     db: aiosqlite.Connection,
@@ -560,7 +527,6 @@ async def get_command_stats(
     ) as cur:
         return await cur.fetchall()
 
-
 async def get_all_deals_for_user(db: aiosqlite.Connection, user_id: int) -> list[aiosqlite.Row]:
     async with db.execute(
         """
@@ -577,7 +543,6 @@ async def get_all_deals_for_user(db: aiosqlite.Connection, user_id: int) -> list
         (user_id, user_id),
     ) as cur:
         return await cur.fetchall()
-
 
 async def get_all_notes_by_user(db: aiosqlite.Connection, user_id: int) -> list[aiosqlite.Row]:
     async with db.execute(

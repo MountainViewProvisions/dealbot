@@ -11,6 +11,10 @@ from bot.models.enums import DealStatus, ActionType, validate_transition
 from bot.services import audit_service, rate_limit_service
 from bot.utils.id_generator import generate_deal_id
 
+# Imported lazily-ish to avoid circular issues; the module itself is stateless
+import bot.services.reputation_service as _rep_svc
+import bot.services.governance_service as _gov_svc
+
 log = logging.getLogger(__name__)
 
 
@@ -61,6 +65,14 @@ async def create_deal(
     if not allowed:
         raise PermissionError(reason)
 
+    # ── Probation check ─────────────────────────────────────────────────────
+    open_count = await queries.count_open_deals_for_user(db, initiator_uid)
+    prob_ok, prob_msg = await _gov_svc.check_probation_restrictions(
+        db, initiator_discord_id, amount, open_count, guild_id
+    )
+    if not prob_ok:
+        raise PermissionError(prob_msg)
+
     initiator_pid    = await queries.upsert_profile(db, initiator_uid, network["id"], initiator_username)
     counterparty_pid = await queries.upsert_profile(db, counterparty_uid, network["id"], counterparty_username)
 
@@ -83,6 +95,24 @@ async def create_deal(
         "none", DealStatus.PENDING_CONFIRMATION.value,
         ActionType.CREATED,
     )
+
+    # ── Escrow confidence check ─────────────────────────────────────────────
+    try:
+        escrow_ok, escrow_msg, _ = await _gov_svc.run_escrow_check(
+            db, deal_id, initiator_discord_id, counterparty_discord_id,
+            amount, guild_id,
+        )
+        if not escrow_ok:
+            # Hard block — cancel the deal we just created
+            await queries.update_deal_status(db, deal_id, "cancelled")
+            raise PermissionError(escrow_msg)
+        if escrow_msg:
+            # Warning / mediator assigned — attach as deal note for visibility
+            log.info(f"Escrow notice for deal {deal_uuid}: {escrow_msg}")
+    except PermissionError:
+        raise
+    except Exception as _esc_err:
+        log.warning(f"Escrow check failed for deal {deal_uuid}: {_esc_err}")
 
     log.info(f"Deal {deal_uuid} created | guild={guild_id} | {initiator_discord_id} ↔ {counterparty_discord_id}")
     return deal_uuid
@@ -170,6 +200,19 @@ async def complete_deal(
             db, deal["id"], current_now, DealStatus.COMPLETED,
             ActionType.COMPLETED, actor_pid,
         )
+        # ── Reputation hook ─────────────────────────────────────────────────
+        # Determine if the deal was ever overdue (status was OVERDUE before completion)
+        was_overdue = current_now == DealStatus.OVERDUE or current == DealStatus.OVERDUE
+        try:
+            await _rep_svc.on_deal_completed(
+                db,
+                deal_id=deal["id"],
+                party_a_discord_id=deal["party_a_discord_id"],
+                party_b_discord_id=deal["party_b_discord_id"],
+                was_overdue=was_overdue,
+            )
+        except Exception as _rep_err:
+            log.warning(f"Reputation update failed for deal {deal_uuid}: {_rep_err}")
         return True, "🎉 Both parties confirmed. Deal marked **COMPLETED**!"
 
     return True, "✅ Completion recorded. Waiting for the other party."
@@ -209,6 +252,15 @@ async def dispute_deal(
         disputed_reason=reason,
         metadata=reason[:500],
     )
+    # ── Reputation hook ──────────────────────────────────────────────────────
+    try:
+        await _rep_svc.on_dispute_escalated(
+            db,
+            deal_id=deal["id"],
+            disputing_discord_id=disputing_discord_id,
+        )
+    except Exception as _rep_err:
+        log.warning(f"Reputation dispute hook failed for deal {deal_uuid}: {_rep_err}")
     return True, "⚠️ Deal marked **DISPUTED**. Reputation updates frozen until resolved."
 
 
@@ -238,6 +290,24 @@ async def admin_resolve_dispute(
         db, deal["id"], DealStatus.DISPUTED, resolution,
         ActionType.RESOLVED, actor_profile_id=None, metadata=meta,
     )
+
+    # ── Reputation hooks on resolution ──────────────────────────────────────
+    try:
+        if resolution == DealStatus.COMPLETED:
+            await _rep_svc.on_deal_completed(
+                db,
+                deal_id=deal["id"],
+                party_a_discord_id=deal["party_a_discord_id"],
+                party_b_discord_id=deal["party_b_discord_id"],
+                was_overdue=False,
+            )
+        elif resolution == DealStatus.DEFAULTED:
+            # Both parties get the failed-deal penalty when admin resolves as defaulted
+            for did in (deal["party_a_discord_id"], deal["party_b_discord_id"]):
+                await _rep_svc.on_deal_defaulted(db, deal_id=deal["id"], defaulting_discord_id=did)
+    except Exception as _rep_err:
+        log.warning(f"Reputation resolution hook failed for deal {deal['deal_uuid']}: {_rep_err}")
+
     return True, f"✅ Dispute resolved. Deal is now **{resolution.value.upper()}**."
 
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from enum import Enum
 
-
 class DealStatus(str, Enum):
     PENDING_CONFIRMATION = "pending_confirmation"
     ACTIVE               = "active"
@@ -12,14 +11,12 @@ class DealStatus(str, Enum):
     DEFAULTED            = "defaulted"
     CANCELLED            = "cancelled"
 
-
 class DealType(str, Enum):
     HOSTING   = "hosting"
     GIFTING   = "gifting"
     PROMOTION = "promotion"
     COLLAB    = "collab"
     OTHER     = "other"
-
 
 class ActionType(str, Enum):
     CREATED    = "created"
@@ -33,7 +30,6 @@ class ActionType(str, Enum):
     CANCELLED  = "cancelled"
     NOTE_ADDED = "note_added"
     CANCELLED_SYSTEM = "cancelled_system"
-
 
 VALID_TRANSITIONS: dict[DealStatus, set[DealStatus]] = {
     DealStatus.PENDING_CONFIRMATION: {
@@ -66,7 +62,6 @@ VALID_TRANSITIONS: dict[DealStatus, set[DealStatus]] = {
     DealStatus.DEFAULTED:  set(),
     DealStatus.CANCELLED:  set(),
 }
-
 
 def validate_transition(current: DealStatus, target: DealStatus) -> bool:
     return target in VALID_TRANSITIONS.get(current, set())

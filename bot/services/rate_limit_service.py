@@ -12,13 +12,11 @@ from bot.models.dataclasses import ServerLimits
 
 log = logging.getLogger(__name__)
 
-
 def _env_int(key: str, default: int) -> int:
     try:
         return int(os.getenv(key, str(default)))
     except ValueError:
         return default
-
 
 def _env_float(key: str, default: float) -> float:
     try:
@@ -26,11 +24,9 @@ def _env_float(key: str, default: float) -> float:
     except ValueError:
         return default
 
-
 _GLOBAL_MAX_OPEN   = _env_int("MAX_OPEN_DEALS_PER_USER", 10)
 _GLOBAL_MAX_VOLUME = _env_float("MAX_DAILY_DEAL_VOLUME", 50_000)
 _GLOBAL_COOLDOWN   = _env_int("DISPUTE_COOLDOWN_HOURS", 24)
-
 
 async def get_limits(
     db: aiosqlite.Connection, guild_id: Optional[int]
@@ -53,7 +49,6 @@ async def get_limits(
         max_daily_volume=_GLOBAL_MAX_VOLUME,
         dispute_cooldown_hours=_GLOBAL_COOLDOWN,
     )
-
 
 async def check_deal_creation(
     db: aiosqlite.Connection,
@@ -81,7 +76,6 @@ async def check_deal_creation(
 
     return True, ""
 
-
 async def check_dispute_cooldown(
     db: aiosqlite.Connection,
     user_id: int,
@@ -107,7 +101,6 @@ async def check_dispute_cooldown(
             f"(server limit: {limits.dispute_cooldown_hours}h)."
         )
     return True, ""
-
 
 async def record_dispute(db: aiosqlite.Connection, user_id: int) -> None:
     ts = datetime.now(tz=timezone.utc).isoformat()

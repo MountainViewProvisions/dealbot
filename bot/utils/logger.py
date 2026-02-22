@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-
 def setup_logging() -> None:
     level_name = os.getenv("LOG_LEVEL", "INFO").upper()
     level = getattr(logging, level_name, logging.INFO)
@@ -39,10 +38,8 @@ def setup_logging() -> None:
     logging.getLogger("discord").setLevel(logging.WARNING)
     logging.getLogger("aiosqlite").setLevel(logging.WARNING)
 
-
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
-
 
 class DiscordChannelHandler(logging.Handler):
 

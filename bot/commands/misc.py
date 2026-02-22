@@ -14,7 +14,6 @@ from bot.utils.embeds import about_embed, error_embed
 
 log = logging.getLogger(__name__)
 
-
 class MiscCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -49,7 +48,6 @@ class MiscCommands(commands.Cog):
             ephemeral=True,
         )
         await log_command(db, interaction.guild_id, interaction.user.id, "export_data", True)
-
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(MiscCommands(bot))

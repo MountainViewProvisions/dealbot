@@ -4,7 +4,6 @@ from typing import Optional
 
 import discord
 
-
 class PaginatorView(discord.ui.View):
 
     def __init__(self, pages: list[discord.Embed], timeout: float = 120):
@@ -45,7 +44,6 @@ class PaginatorView(discord.ui.View):
                 await self.message.edit(view=self)
             except Exception:
                 pass
-
 
 def chunk_list(items: list, size: int) -> list[list]:
     return [items[i : i + size] for i in range(0, len(items), size)]

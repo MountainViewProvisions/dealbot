@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -22,7 +22,9 @@ def validate_due_date(raw: str) -> tuple[bool, str, Optional[datetime]]:
         dt = datetime.strptime(raw, "%Y-%m-%d")
     except ValueError:
         return False, "Date must be in YYYY-MM-DD format (e.g. 2025-12-31).", None
-    if dt < datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0):
+    # Compare against timezone-naive today for consistent behaviour with strptime output.
+    today = datetime.now(tz=timezone.utc).replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0)
+    if dt < today:
         return False, "Due date cannot be in the past.", None
     return True, "", dt
 

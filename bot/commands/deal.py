@@ -25,7 +25,6 @@ log = logging.getLogger(__name__)
 
 _PAGE_SIZE = 8
 
-
 class DealCommands(commands.GroupCog, name="deal"):
 
     def __init__(self, bot: commands.Bot):
@@ -229,7 +228,6 @@ class DealCommands(commands.GroupCog, name="deal"):
             return
         embed = deal_embed(data["deal"], data["notes"])
         await interaction.followup.send(embed=embed, ephemeral=True)
-
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(DealCommands(bot))

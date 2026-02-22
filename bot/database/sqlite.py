@@ -7,17 +7,18 @@ from typing import Optional
 import aiosqlite
 
 from bot.database.migrations import run_migrations
+from bot.database.agency_migrations import run_agency_migrations
+from bot.database.reputation_migrations import run_reputation_migrations
+from bot.database.governance_migrations import run_governance_migrations
 
 log = logging.getLogger(__name__)
 
 _db: Optional[aiosqlite.Connection] = None
 
-
 async def get_db() -> aiosqlite.Connection:
     if _db is None:
         raise RuntimeError("Database not initialised. Call init_db() first.")
     return _db
-
 
 async def init_db() -> None:
     global _db
@@ -30,7 +31,9 @@ async def init_db() -> None:
     await _db.commit()
     log.info(f"Database opened: {path}")
     await run_migrations(_db)
-
+    await run_agency_migrations(_db)
+    await run_reputation_migrations(_db)
+    await run_governance_migrations(_db)
 
 async def close_db() -> None:
     global _db

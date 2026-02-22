@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 
 _TIMEOUT = 120
 
-
 class DealWizard:
 
     def __init__(
